@@ -28,7 +28,7 @@ func TestS3Client(t *testing.T) {
 	client = cli
 
 	// We clean the "objclient/" prefix first.
-	t.Run("Remove", testRemove)
+	t.Run("Clean", testRemove)
 
 	t.Run("ReadWrite", testReadWrite)
 	t.Run("Exist", testExist)

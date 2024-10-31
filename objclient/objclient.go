@@ -8,18 +8,25 @@ import (
 )
 
 type Client interface {
+	// The caller should close the returned reader when done.
 	Read(ctx context.Context, key string) (io.ReadCloser, error)
+	// The WriteOptions can be empty for OSS clients. But caller must set the
+	// Size option for S3 clients.
 	Write(ctx context.Context, key string, r io.Reader, o *WriteOptions) error
 	Exist(ctx context.Context, key string) (bool, error)
 	Remove(ctx context.Context, key string) error
 
+	// Empty prefix will list every objects in the bucket. Otherwise, the
+	// prefix should end with a "/".
 	List(ctx context.Context, prefix string) ([]ObjectItem, error)
 	Info(ctx context.Context, key string) (*ObjectInfo, error)
 	Copy(ctx context.Context, src, dst string) error
 }
 
 type WriteOptions struct {
-	Size     int64
+	// Size is required for S3 clients.
+	Size int64
+	// Metadata is optional. Keys should be lower case.
 	Metadata map[string]string
 }
 
