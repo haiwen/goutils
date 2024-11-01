@@ -160,15 +160,28 @@ func (client *S3Client) Exist(ctx context.Context, key string) (bool, error) {
 	return true, nil
 }
 
-func (client *S3Client) Remove(ctx context.Context, key string) error {
-	var opts minio.RemoveObjectOptions
+func (client *S3Client) Remove(ctx context.Context, keys ...string) error {
+	var (
+		opts minio.RemoveObjectsOptions
+		err  error
+	)
 
-	err := client.backend.RemoveObject(ctx, client.bucket, key, opts)
-	if err != nil {
-		return err
+	if len(keys) == 0 {
+		return nil
+	}
+	objs := make(chan minio.ObjectInfo, len(keys))
+	for _, key := range keys {
+		objs <- minio.ObjectInfo{Key: key}
+	}
+	close(objs)
+	errs := client.backend.RemoveObjects(ctx, client.bucket, objs, opts)
+	for e := range errs {
+		if err == nil {
+			err = fmt.Errorf("failed to remove %v: %w", e.ObjectName, e.Err)
+		}
 	}
 
-	return nil
+	return err
 }
 
 func (client *S3Client) List(ctx context.Context, prefix string) ([]ObjectItem, error) {

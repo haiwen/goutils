@@ -69,8 +69,12 @@ func (client *OSSClient) Exist(ctx context.Context, key string) (bool, error) {
 	return client.bucket.IsObjectExist(key, oss.WithContext(ctx))
 }
 
-func (client *OSSClient) Remove(ctx context.Context, key string) error {
-	return client.bucket.DeleteObject(key, oss.WithContext(ctx))
+func (client *OSSClient) Remove(ctx context.Context, keys ...string) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	_, err := client.bucket.DeleteObjects(keys, oss.WithContext(ctx))
+	return err
 }
 
 func (client *OSSClient) List(ctx context.Context, prefix string) ([]ObjectItem, error) {
@@ -138,8 +142,5 @@ func (client *OSSClient) Info(ctx context.Context, key string) (*ObjectInfo, err
 
 func (client *OSSClient) Copy(ctx context.Context, src, dst string) error {
 	_, err := client.bucket.CopyObject(src, dst, oss.WithContext(ctx))
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

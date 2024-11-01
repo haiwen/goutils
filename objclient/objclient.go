@@ -14,7 +14,7 @@ type Client interface {
 	// Size option for S3 clients.
 	Write(ctx context.Context, key string, r io.Reader, o *WriteOptions) error
 	Exist(ctx context.Context, key string) (bool, error)
-	Remove(ctx context.Context, key string) error
+	Remove(ctx context.Context, keys ...string) error
 
 	// Empty prefix will list every objects in the bucket. Otherwise, the
 	// prefix should end with a "/".
