@@ -1,0 +1,41 @@
+---
+name: CI Testing
+on:
+  - pull_request
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: run gofmt
+        run: |
+          [ "$(gofmt -s -l . | wc -l)" -eq 0 ]
+
+      - name: run go vet
+        run: |
+          go vet ./...
+
+      - name: run static checks
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
+          staticcheck ./...
+
+      - name: run tests
+        env:
+          s3_region: ${{secrets.S3_REGION}}
+          s3_bucket: ${{secrets.S3_BUCKET}}
+          s3_key_id: ${{secrets.S3_ACCESS_KEY_ID}}
+          s3_key: ${{secrets.S3_ACCESS_KEY}}
+          oss_region: ${{secrets.OSS_REGION}}
+          oss_bucket: ${{secrets.OSS_BUCKET}}
+          oss_key_id: ${{secrets.OSS_ACCESS_KEY_ID}}
+          oss_key: ${{secrets.OSS_ACCESS_KEY}}
+        run: |
+          TZ='Asia/Shanghai' go test -v ./...
