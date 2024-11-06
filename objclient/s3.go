@@ -55,7 +55,7 @@ func NewS3Client(config S3Config) (Client, error) {
 		creds = credentials.NewStaticV4(config.KeyID, config.Key, "")
 	}
 
-	https := stringToBool(config.HTTPS, true)
+	https := stringToBool(config.HTTPS, false)
 
 	lookup := minio.BucketLookupDNS
 	if stringToBool(config.PathStyleRequest, false) {

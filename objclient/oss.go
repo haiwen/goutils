@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -14,6 +15,7 @@ import (
 type OSSConfig struct {
 	Endpoint string
 	Region   string
+	HTTPS    string
 	Bucket   string
 	KeyID    string
 	Key      string
@@ -32,8 +34,16 @@ func NewOSSClient(config OSSConfig) (Client, error) {
 	if endpoint == "" && region != "" {
 		endpoint = "oss-" + region + ".aliyuncs.com"
 	}
+	uri := url.URL{Host: endpoint}
 
-	backend, err := oss.New(endpoint, config.KeyID, config.Key)
+	https := stringToBool(config.HTTPS, true)
+	if https {
+		uri.Scheme = "https"
+	} else {
+		uri.Scheme = "http"
+	}
+
+	backend, err := oss.New(uri.String(), config.KeyID, config.Key)
 	if err != nil {
 		return nil, err
 	}

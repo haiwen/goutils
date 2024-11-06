@@ -2,10 +2,13 @@ package objclient
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 var (
@@ -38,10 +41,43 @@ func TestS3Client(t *testing.T) {
 	t.Run("Remove", testRemove)
 }
 
+func TestS3SSECClient(t *testing.T) {
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cli, err := NewS3Client(S3Config{
+		Region:      os.Getenv("s3_region"),
+		HTTPS:       "true",
+		Bucket:      os.Getenv("s3_bucket"),
+		KeyID:       os.Getenv("s3_key_id"),
+		Key:         os.Getenv("s3_key"),
+		V4Signature: "true",
+		SSECKey:     string(key),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client = cli
+
+	// We clean the "objclient/" prefix first.
+	t.Run("Clean", testRemove)
+
+	t.Run("ReadWrite", testReadWrite)
+	t.Run("Exist", testExist)
+	t.Run("Info", testInfo)
+	t.Run("Copy", testCopy)
+	t.Run("List", testList)
+	t.Run("Remove", testRemove)
+}
+
 func TestOSSClient(t *testing.T) {
 	cli, err := NewOSSClient(OSSConfig{
 		Endpoint: "oss-" + os.Getenv("oss_region") + ".aliyuncs.com",
 		Region:   os.Getenv("oss_region"),
+		HTTPS:    "true",
 		Bucket:   os.Getenv("oss_bucket"),
 		KeyID:    os.Getenv("oss_key_id"),
 		Key:      os.Getenv("oss_key"),
@@ -60,7 +96,6 @@ func TestOSSClient(t *testing.T) {
 	t.Run("Copy", testCopy)
 	t.Run("List", testList)
 	t.Run("Remove", testRemove)
-
 }
 
 func testReadWrite(t *testing.T) {
@@ -127,6 +162,28 @@ func testInfo(t *testing.T) {
 		t.Fatalf("invalid metadata: %v", info.Metadata)
 	}
 	if info.Metadata["foo"] != "bar" {
+		t.Fatalf("invalid metadata: %v", info.Metadata)
+	}
+
+	body.Reset("demo")
+	now := fmt.Sprint(time.Now().Unix())
+	meta = map[string]string{"ctime": now}
+
+	err = client.Write(ctx, "objclient/test", body,
+		&WriteOptions{Size: body.Size(), Metadata: meta},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err = client.Info(ctx, "objclient/test")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(info.Metadata) != 1 {
+		t.Fatalf("invalid metadata: %v", info.Metadata)
+	}
+	if info.Metadata["ctime"] != now {
 		t.Fatalf("invalid metadata: %v", info.Metadata)
 	}
 }
