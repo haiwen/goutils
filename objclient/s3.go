@@ -145,6 +145,9 @@ func (client *S3Client) Write(ctx context.Context, key string, r io.Reader, o *W
 }
 
 func (client *S3Client) Exist(ctx context.Context, key string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	var opts minio.StatObjectOptions
 	if client.sseckey != nil {
 		opts.ServerSideEncryption = client.sseckey
@@ -161,19 +164,23 @@ func (client *S3Client) Exist(ctx context.Context, key string) (bool, error) {
 }
 
 func (client *S3Client) Remove(ctx context.Context, keys ...string) error {
-	var (
-		opts minio.RemoveObjectsOptions
-		err  error
-	)
-
 	if len(keys) == 0 {
 		return nil
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	objs := make(chan minio.ObjectInfo, len(keys))
 	for _, key := range keys {
 		objs <- minio.ObjectInfo{Key: key}
 	}
 	close(objs)
+
+	var (
+		opts minio.RemoveObjectsOptions
+		err  error
+	)
 	errs := client.backend.RemoveObjects(ctx, client.bucket, objs, opts)
 	for e := range errs {
 		if err == nil {
@@ -215,6 +222,9 @@ func (client *S3Client) List(ctx context.Context, prefix string) ([]ObjectItem, 
 }
 
 func (client *S3Client) Info(ctx context.Context, key string) (*ObjectInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	var opts minio.StatObjectOptions
 	if client.sseckey != nil {
 		opts.ServerSideEncryption = client.sseckey
@@ -239,6 +249,9 @@ func (client *S3Client) Info(ctx context.Context, key string) (*ObjectInfo, erro
 }
 
 func (client *S3Client) Copy(ctx context.Context, src, dst string) error {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	srcOpts := minio.CopySrcOptions{
 		Bucket: client.bucket,
 		Object: src,

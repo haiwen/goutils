@@ -76,6 +76,9 @@ func (client *OSSClient) Write(ctx context.Context, key string, r io.Reader, o *
 }
 
 func (client *OSSClient) Exist(ctx context.Context, key string) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	return client.bucket.IsObjectExist(key, oss.WithContext(ctx))
 }
 
@@ -83,6 +86,10 @@ func (client *OSSClient) Remove(ctx context.Context, keys ...string) error {
 	if len(keys) == 0 {
 		return nil
 	}
+
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	_, err := client.bucket.DeleteObjects(keys, oss.WithContext(ctx))
 	return err
 }
@@ -121,6 +128,9 @@ func (client *OSSClient) List(ctx context.Context, prefix string) ([]ObjectItem,
 }
 
 func (client *OSSClient) Info(ctx context.Context, key string) (*ObjectInfo, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	header, err := client.bucket.GetObjectDetailedMeta(key, oss.WithContext(ctx))
 	if err != nil {
 		return nil, err
@@ -151,6 +161,9 @@ func (client *OSSClient) Info(ctx context.Context, key string) (*ObjectInfo, err
 }
 
 func (client *OSSClient) Copy(ctx context.Context, src, dst string) error {
+	ctx, cancel := context.WithTimeout(ctx, defaultTimeout)
+	defer cancel()
+
 	_, err := client.bucket.CopyObject(src, dst, oss.WithContext(ctx))
 	return err
 }
