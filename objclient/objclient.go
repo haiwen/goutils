@@ -7,6 +7,10 @@ import (
 	"time"
 )
 
+const (
+	defaultTimeout = 30 * time.Second
+)
+
 type Client interface {
 	// The caller should close the returned reader when done.
 	Read(ctx context.Context, key string) (io.ReadCloser, error)
