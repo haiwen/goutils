@@ -57,7 +57,7 @@ func NewS3Client(config S3Config) (Client, error) {
 	}
 
 	useIAMRole := os.Getenv("S3_USE_IAM_ROLE")
-	if useIAMRole == "true" && config.Key == "" {
+	if useIAMRole == "true" {
 		iamRoleEndpoint := os.Getenv("S3_IAM_ROLE_ENDPOINT")
 		creds = credentials.NewIAM(iamRoleEndpoint)
 	}
