@@ -23,6 +23,8 @@ type S3Config struct {
 	Key              string
 	V4Signature      string
 	SSECKey          string
+	UseIAMRole       string
+	IAMRoleEndpoint  string
 }
 
 type S3Client struct {
@@ -53,6 +55,11 @@ func NewS3Client(config S3Config) (Client, error) {
 	creds := credentials.NewStaticV2(config.KeyID, config.Key, "")
 	if v4Signature {
 		creds = credentials.NewStaticV4(config.KeyID, config.Key, "")
+	}
+
+	useIAMRole := stringToBool(config.UseIAMRole, false)
+	if useIAMRole {
+		creds = credentials.NewIAM(config.IAMRoleEndpoint)
 	}
 
 	https := stringToBool(config.HTTPS, false)
