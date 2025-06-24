@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/minio/minio-go/v7"
@@ -24,6 +23,8 @@ type S3Config struct {
 	Key              string
 	V4Signature      string
 	SSECKey          string
+	UseIAMRole       string
+	IAMRoleEndpoint  string
 }
 
 type S3Client struct {
@@ -56,10 +57,9 @@ func NewS3Client(config S3Config) (Client, error) {
 		creds = credentials.NewStaticV4(config.KeyID, config.Key, "")
 	}
 
-	useIAMRole := os.Getenv("S3_USE_IAM_ROLE")
-	if useIAMRole == "true" {
-		iamRoleEndpoint := os.Getenv("S3_IAM_ROLE_ENDPOINT")
-		creds = credentials.NewIAM(iamRoleEndpoint)
+	useIAMRole := stringToBool(config.UseIAMRole, false)
+	if useIAMRole {
+		creds = credentials.NewIAM(config.IAMRoleEndpoint)
 	}
 
 	https := stringToBool(config.HTTPS, false)
