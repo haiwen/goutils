@@ -25,12 +25,14 @@ type S3Config struct {
 	SSECKey          string
 	UseIAMRole       string
 	IAMRoleEndpoint  string
+	PartSize         uint64
 }
 
 type S3Client struct {
-	backend *minio.Client
-	bucket  string
-	sseckey encrypt.ServerSide
+	backend  *minio.Client
+	bucket   string
+	sseckey  encrypt.ServerSide
+	partSize uint64
 }
 
 func NewS3Client(config S3Config) (Client, error) {
@@ -86,6 +88,8 @@ func NewS3Client(config S3Config) (Client, error) {
 		client.sseckey = key
 	}
 
+	client.partSize = config.PartSize
+
 	backend, err := minio.New(endpoint, &minio.Options{
 		Region:       region,
 		Creds:        creds,
@@ -134,6 +138,7 @@ func (client *S3Client) Write(ctx context.Context, key string, r io.Reader, o *W
 	if client.sseckey != nil {
 		opts.ServerSideEncryption = client.sseckey
 	}
+	opts.PartSize = client.partSize
 	if len(o.Metadata) > 0 {
 		opts.UserMetadata = make(map[string]string)
 		for key, val := range o.Metadata {
