@@ -13,12 +13,13 @@ import (
 )
 
 type OSSConfig struct {
-	Endpoint string
-	Region   string
-	HTTPS    string
-	Bucket   string
-	KeyID    string
-	Key      string
+	Endpoint    string
+	Region      string
+	HTTPS       string
+	Bucket      string
+	KeyID       string
+	Key         string
+	V4Signature string
 }
 
 type OSSClient struct {
@@ -27,6 +28,8 @@ type OSSClient struct {
 
 func NewOSSClient(config OSSConfig) (Client, error) {
 	var client OSSClient
+
+	v4Signature := stringToBool(config.V4Signature, false)
 
 	region := config.Region
 
@@ -43,9 +46,18 @@ func NewOSSClient(config OSSConfig) (Client, error) {
 		uri.Scheme = "http"
 	}
 
-	backend, err := oss.New(uri.String(), config.KeyID, config.Key)
-	if err != nil {
-		return nil, err
+	var backend *oss.Client
+	var err error
+	if v4Signature {
+		backend, err = oss.New(uri.String(), config.KeyID, config.Key, oss.AuthVersion(oss.AuthV4), oss.Region(region))
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		backend, err = oss.New(uri.String(), config.KeyID, config.Key)
+		if err != nil {
+			return nil, err
+		}
 	}
 	bucket, err := backend.Bucket(config.Bucket)
 	if err != nil {
