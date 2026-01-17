@@ -33,6 +33,10 @@ func NewOSSClient(config OSSConfig) (Client, error) {
 
 	region := config.Region
 
+	if region != "" && !strings.Contains(region, "-") {
+		region = "cn-" + region
+	}
+
 	endpoint := config.Endpoint
 	if endpoint == "" && region != "" {
 		endpoint = "oss-" + region + ".aliyuncs.com"
