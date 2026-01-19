@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/minio/minio-go/v7"
@@ -99,6 +100,8 @@ func NewS3Client(config S3Config) (Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to create s3 client: %w", err)
 	}
+
+	backend.TraceOn(os.Stdout)
 
 	client.backend = backend
 	client.bucket = config.Bucket
