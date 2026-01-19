@@ -33,6 +33,7 @@ func TestS3Client(t *testing.T) {
 
 	t.Run("ReadWrite1", testReadWrite1)
 	t.Run("ReadWrite2", testReadWrite2)
+	t.Run("Remove", testRemove)
 }
 
 func testReadWrite1(t *testing.T) {
@@ -76,6 +77,13 @@ func testReadWrite2(t *testing.T) {
 	defer r.Close()
 
 	_, err = io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func testRemove(t *testing.T) {
+	err := client.Remove(ctx, "objclient/test")
 	if err != nil {
 		t.Fatal(err)
 	}
