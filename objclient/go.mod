@@ -1,4 +1,4 @@
-module github.com/haiwen/goutils
+module github.com/haiwen/goutils/objclient
 
 go 1.24.0
 
