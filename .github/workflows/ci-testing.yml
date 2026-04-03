@@ -5,6 +5,9 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        module: [./clusterkit, ./objclient]
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -12,7 +15,7 @@ jobs:
       - name: set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.24'
+          go-version: '1.25'
 
       - name: run gofmt
         run: |
@@ -20,10 +23,12 @@ jobs:
 
       - name: run go vet
         run: |
+          cd ${{ matrix.module }}
           go vet ./...
 
       - name: run static checks
         run: |
+          cd ${{ matrix.module }}
           go install honnef.co/go/tools/cmd/staticcheck@v0.6.1
           staticcheck ./...
 
@@ -38,4 +43,5 @@ jobs:
           oss_key_id: ${{secrets.OSS_ACCESS_KEY_ID}}
           oss_key: ${{secrets.OSS_ACCESS_KEY}}
         run: |
+          cd ${{ matrix.module }}
           TZ='Asia/Shanghai' go test -v ./...
