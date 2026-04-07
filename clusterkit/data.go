@@ -66,10 +66,9 @@ type Heartbeat struct {
 }
 
 // ListHeartbeats fetches heartbeat entries from etcd under the configured prefix.
-// It parses node ID from the key (expected as "<prefix>/cluster/hb/<nodeID>") and
-// unmarshals the JSON value into a Heartbeat (which contains the Last time).
+// It parses node ID from the key (expected as "<prefix>/cluster/hb/<nodeID>").
 //
-// Returns a non-nil slice (possibly empty) and an error.
+// Returns a non-nil slice (possibly empty) or an error.
 func ListHeartbeats(ctx context.Context) ([]Heartbeat, error) {
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
