@@ -20,7 +20,7 @@ func WatchAssigns(ctx context.Context, rev int64) Iter[int64] {
 	return WatchUpdates(ctx, rev, key, true)
 }
 
-func WatchUpdates(ctx context.Context, rev int64, key string, prefix bool) Iter[int64] {
+func WatchUpdates(ctx context.Context, rev int64, rawKey string, prefix bool) Iter[int64] {
 	return NewIter(func(yield func(int64) bool) error {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -32,14 +32,14 @@ func WatchUpdates(ctx context.Context, rev int64, key string, prefix bool) Iter[
 		}
 
 		timer := time.AfterFunc(timeout, cancel)
-		watch := client.Watch(ctx, key, opts...)
 		session, err := concurrency.NewSession(client,
 			concurrency.WithContext(ctx),
 			concurrency.WithTTL(3),
 		)
+		watch := client.Watch(ctx, rawKey, opts...)
 		timer.Stop()
 		if err != nil {
-			return fmt.Errorf("failed to watch etcd: %w", err)
+			return fmt.Errorf("failed to create etcd session: %w", err)
 		}
 		defer session.Close()
 
