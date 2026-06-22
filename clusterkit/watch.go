@@ -56,7 +56,7 @@ func WatchUpdates(ctx context.Context, rev int64, key string, prefix bool) Iter[
 
 			case item := <-watch:
 				if item.Err() != nil {
-					return fmt.Errorf("failed to watch etcd: %w", err)
+					return fmt.Errorf("failed to watch etcd: %w", item.Err())
 				}
 				if len(item.Events) == 0 {
 					continue
