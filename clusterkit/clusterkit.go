@@ -15,17 +15,25 @@ const (
 )
 
 var (
-	client    *etcd.Client
-	namespace string
+	client      *etcd.Client
+	clientOwned bool
+	namespace   string
 )
 
-func Open(endpoints []string, prefix string) error {
-	var err error
+// OpenWithClient reuses an existing etcd client. Close will not close the
+// injected client; its lifecycle stays with the caller.
+func OpenWithClient(c *etcd.Client, prefix string) error {
+	client = c
+	clientOwned = false
+	namespace = prefix
+	return nil
+}
 
+func Open(endpoints []string, prefix string) error {
 	conf := logutil.DefaultZapLoggerConfig
 	conf.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
 
-	client, err = etcd.New(etcd.Config{
+	c, err := etcd.New(etcd.Config{
 		Endpoints:   endpoints,
 		DialTimeout: timeout,
 		LogConfig:   &conf,
@@ -33,13 +41,20 @@ func Open(endpoints []string, prefix string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create etcd client: %w", err)
 	}
+	client = c
+	clientOwned = true
 	namespace = prefix
 
 	return nil
 }
 
 func Close() {
-	client.Close()
+	if client != nil && clientOwned {
+		client.Close()
+	}
+	client = nil
+	clientOwned = false
+	namespace = ""
 }
 
 func Delete(ctx context.Context, key string, prefix bool) error {
