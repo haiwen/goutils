@@ -77,3 +77,52 @@ func WatchUpdates(ctx context.Context, rev int64, key string, prefix bool) Iter[
 		}
 	})
 }
+
+// WatchEvents watches every etcd event after rev without batching.
+func WatchEvents(ctx context.Context, rev int64, key string, prefix bool) Iter[*etcd.Event] {
+	return NewIter(func(yield func(*etcd.Event) bool) error {
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+
+		ctx = etcd.WithRequireLeader(ctx)
+		opts := []etcd.OpOption{etcd.WithRev(rev + 1)}
+		if prefix {
+			opts = append(opts, etcd.WithPrefix())
+		}
+
+		timer := time.AfterFunc(timeout, cancel)
+		watch := client.Watch(ctx, key, opts...)
+		session, err := concurrency.NewSession(client,
+			concurrency.WithContext(ctx),
+			concurrency.WithTTL(3),
+		)
+		timer.Stop()
+		if err != nil {
+			return fmt.Errorf("failed to watch etcd: %w", err)
+		}
+		defer session.Close()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+
+			case <-session.Done():
+				return fmt.Errorf("etcd session closed")
+
+			case item, ok := <-watch:
+				if !ok {
+					return fmt.Errorf("etcd watch channel closed")
+				}
+				if item.Err() != nil {
+					return fmt.Errorf("failed to watch etcd: %w", item.Err())
+				}
+				for _, event := range item.Events {
+					if !yield(event) {
+						return nil
+					}
+				}
+			}
+		}
+	})
+}
