@@ -26,7 +26,7 @@ func WatchUpdates(ctx context.Context, rev int64, key string, prefix bool) Iter[
 		defer cancel()
 
 		ctx = etcd.WithRequireLeader(ctx)
-		opts := []etcd.OpOption{etcd.WithRev(rev)}
+		opts := []etcd.OpOption{etcd.WithRev(rev + 1)}
 		if prefix {
 			opts = append(opts, etcd.WithPrefix())
 		}
@@ -54,7 +54,10 @@ func WatchUpdates(ctx context.Context, rev int64, key string, prefix bool) Iter[
 			case <-session.Done():
 				return fmt.Errorf("etcd session closed")
 
-			case item := <-watch:
+			case item, ok := <-watch:
+				if !ok {
+					return fmt.Errorf("etcd watch channel closed")
+				}
 				if item.Err() != nil {
 					return fmt.Errorf("failed to watch etcd: %w", item.Err())
 				}
