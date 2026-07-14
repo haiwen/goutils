@@ -30,7 +30,7 @@ func GetClusterNodes(ctx context.Context) (*ClusterNodes, int64, error) {
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to get etcd key %q: %w", key, err)
 	} else if len(rsp.Kvs) == 0 {
-		return &ClusterNodes{}, 0, nil
+		return &ClusterNodes{}, rsp.Header.Revision, nil
 	}
 
 	var nodes ClusterNodes
