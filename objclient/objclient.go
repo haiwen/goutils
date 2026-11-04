@@ -54,6 +54,11 @@ func stringToBool(s string, defaults bool) bool {
 	}
 }
 
+type TimeoutReadSeeker struct {
+	*TimeoutReader
+	seeker io.Seeker
+}
+
 // TimeoutReader will call the cancel function if Read() was blocked for about
 // 30 seconds.
 type TimeoutReader struct {
@@ -66,13 +71,27 @@ type TimeoutReader struct {
 
 // newTimeoutReader returns a new timeout reader.
 // Caller should close it after reading.
-func newTimeoutReader(r io.Reader, c io.Closer, cancel context.CancelFunc) *TimeoutReader {
+func newTimeoutReader(r io.Reader, c io.Closer, cancel context.CancelFunc) io.ReadCloser {
 	reader := new(TimeoutReader)
 	reader.r = r
 	reader.c = c
 	reader.cancel = cancel
+
 	go reader.timer()
+
+	if seeker, ok := r.(io.Seeker); ok {
+		readSeeker := new(TimeoutReadSeeker)
+		readSeeker.TimeoutReader = reader
+		readSeeker.seeker = seeker
+
+		return readSeeker
+	}
+
 	return reader
+}
+
+func (s *TimeoutReadSeeker) Seek(offset int64, whence int) (int64, error) {
+	return s.seeker.Seek(offset, whence)
 }
 
 func (reader *TimeoutReader) Read(data []byte) (int, error) {
