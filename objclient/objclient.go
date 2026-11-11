@@ -79,6 +79,9 @@ func newTimeoutReader(r io.Reader, c io.Closer, cancel context.CancelFunc) io.Re
 
 	go reader.timer()
 
+	// To support retries of requests in minio-go, which require the reader to implement the Seek interface to reset the read position,
+	// we need to explicitly distinguish between readers that support Seek and those that don't.
+	// Use TimeoutReadSeeker for readers that implement Seek, and TimeoutReader for those that don't.
 	if seeker, ok := r.(io.Seeker); ok {
 		readSeeker := new(TimeoutReadSeeker)
 		readSeeker.TimeoutReader = reader
